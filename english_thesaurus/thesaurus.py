@@ -1,36 +1,40 @@
-# User enters a word to see the definition
-
+import re
 import json
 import difflib
 
 info = json.load(open("data.json"))
 
 # convert key names into lowercase
-data = {x.lower():info[x] for x in info.keys()}
-
-user_word = input("Enter word: ").lower()
+data = {x.lower(): info[x] for x in info.keys()}
 
 
-def suggest_word(error_word):
+def get_user_input():
+    word = input("Enter word: ").lower()
+    if re.search(r"\d", word) or re.search(r"\W", word):
+        return False
+    return word
+
+
+def suggest_close_word(error_word):
     return difflib.get_close_matches(error_word, data.keys())[0]
 
 
-def find_meaning(word):
+def get_definition():
+    word = get_user_input()
     while True:
-        try:
-            meaning = ""
-            for definition in data[word]:
-                meaning += definition + "\n"
-            return meaning
-        except KeyError:
-            if suggest_word(word):
-                suggestion = input(f"Did you mean {suggest_word(word)} instead? \n"
-                                   f"Enter Y if yes, or N if no: ")
-                if suggestion == 'Y'.lower():
-                    word = suggest_word(word)
-                    continue
-                return "Entry not understood."
-            return "The word doesn't exist. Please double check it."
+        if not word:
+            return "Search cannot include numbers/special characters"
+        if word in data.keys():
+            answer = ""
+            for item in data[word]:
+                answer += item + "\n"
+            return answer
+        elif suggest_close_word(word) is not None:
+            new_suggest = input(f"Did you mean {suggest_close_word(word)} instead? Y/N? ").lower()
+            if new_suggest == "y":
+                word = suggest_close_word(word)
+                continue
+        return "The word does not exist"
 
 
-print(find_meaning(user_word))
+print(get_definition())
